@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CapShell - 把你的任何 Web 应用，在不改一行源码的前提下，瞬间变成拥有系统权限、仅 5MB 的原生桌面 App</title>
+  <link rel="stylesheet" href="assets/css/styles.css"/>
+</head>
+<body>
+  <iframe id="appFrame"></iframe>
+
+  <div id="loading" class="overlay loading">
+    <img alt="Loading..." src="assets/images/loading.gif"/>
+  </div>
+
+  <iframe id="cameraFrame" class="overlay d-none"></iframe>
+
+  <script src="assets/js/capabilities.js"></script>
+  <script src="assets/js/index.js"></script>
+</body>
+</html>

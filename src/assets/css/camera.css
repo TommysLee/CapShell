@@ -1,0 +1,274 @@
+/* ----- 全局重置与基础样式 ----- */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+body {
+  background-color: #000;
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+  touch-action: none;
+  user-select: none;
+}
+
+/* ----- 工具类 ----- */
+.full-cover {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.hidden-el {
+  display: none !important;
+}
+.mirror-effect {
+  transform: scaleX(-1);
+}
+
+/* ----- 视频/预览容器 ----- */
+#videoContainer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #000;
+}
+
+/* ----- 顶部状态栏 ----- */
+.top-bar {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 20;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-family: 'SF Mono', monospace;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+.top-bar svg {
+  width: 14px;
+  height: 14px;
+  opacity: 0.7;
+  fill: currentColor;
+}
+.top-bar .status-text {
+  color: #e5e7eb;
+}
+.top-bar .status-text.error {
+  color: #f87171;
+}
+
+/* ----- 错误遮罩 ----- */
+#errorOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  gap: 16px;
+  z-index: 15;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+#errorOverlay.show {
+  display: flex;
+}
+#errorOverlay .error-icon {
+  font-size: 48px;
+  opacity: 0.6;
+}
+#errorOverlay .error-message {
+  font-size: 18px;
+  color: #e5e7eb;
+  text-align: center;
+  max-width: 80%;
+  line-height: 1.5;
+}
+#errorOverlay .error-retry {
+  margin-top: 8px;
+  padding: 10px 28px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+#errorOverlay .error-retry:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* ----- 底部控制栏 ----- */
+.control-bar {
+  position: fixed;
+  bottom: 32px;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 24px;
+  z-index: 30;
+  pointer-events: none;
+}
+.side-group {
+  pointer-events: auto;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+}
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #e5e7eb;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+}
+.toggle-input { display: none; }
+.toggle-track {
+  width: 36px;
+  height: 20px;
+  background-color: #4b5563;
+  border-radius: 999px;
+  position: relative;
+  transition: background-color 0.3s ease;
+}
+.toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background-color: #fff;
+  border-radius: 50%;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+.toggle-input:checked + .toggle-track {
+  background-color: #6366f1;
+}
+.toggle-input:checked + .toggle-track .toggle-thumb {
+  transform: translateX(16px);
+}
+
+.center-action {
+  pointer-events: auto;
+  position: relative;
+  width: 120px;
+  height: 80px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.shutter-btn {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 4px solid rgba(255, 255, 255, 0.8);
+  background: transparent;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: transform 0.1s, background-color 0.2s;
+  outline: none;
+  touch-action: manipulation;
+}
+.shutter-btn:active {
+  transform: scale(0.92);
+  background-color: rgba(255,255,255,0.1);
+}
+.shutter-inner {
+  width: 56px;
+  height: 56px;
+  background-color: #ef4444;
+  border-radius: 50%;
+  transition: transform 0.2s;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+}
+.shutter-btn:hover .shutter-inner {
+  transform: scale(0.95);
+}
+
+.confirm-actions {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+  justify-content: center;
+}
+.circle-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  touch-action: manipulation;
+}
+.circle-btn:active {
+  transform: scale(0.9);
+}
+.circle-btn svg {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+}
+.btn-retake {
+  background: rgba(31, 41, 55, 0.8);
+}
+.btn-retake:hover {
+  background: rgba(55, 65, 81, 0.9);
+}
+.btn-confirm {
+  background: #4f46e5;
+  border-color: rgba(255,255,255,0.3);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+}
+.btn-confirm:hover {
+  background: #6366f1;
+}
+.btn-close {
+  left: 16px;
+  right: unset;
+  pointer-events: unset;
+  cursor: pointer;
+}
+.spacer {
+  width: 80px;
+}

@@ -1,0 +1,40 @@
+[package]
+name = "capshell"
+version = "1.0.0"
+description = "Turn any website into a native app. No rewrite. Zero Rust. Just config."
+authors = ["Tommy"]
+edition = "2024"
+
+[profile.dev]
+debug = 1 # 只保留最基本的行号信息，去掉完整调试符号（体积减少 50% 以上）
+incremental = false # 关闭增量编译历史堆积（清理更彻底）
+
+[profile.release]
+lto = true          # 开启链接时优化
+strip = true        # 剥除符号表（EXE 瞬间缩小 30%~50%）
+opt-level = "z"     # 优化体积（z 比 s 更激进）
+codegen-units = 1   # 单线程编译，利于 LTO 和 Strip 生效
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+# The `_lib` suffix may seem redundant but it is necessary
+# to make the lib name unique and wouldn't conflict with the bin name.
+# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
+name = "capshell_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+log = "0.4"
+fern = "0.6"
+chrono = "0.4"
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-single-instance = "2"

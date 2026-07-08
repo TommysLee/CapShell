@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>开发者模式 - Turn any website into a native app. No rewrite. Zero Rust. Just config</title>
+  <style>
+    body {
+      padding: 10px 20px;
+    }
+    button {
+      margin: 0 20px;
+    }
+    div {
+      margin-top: 20px;
+    }
+    img {
+      width: 500px;
+      margin-left: 20px;
+    }
+    a {
+        display: block;
+        margin-top: 10px;
+    }
+    .text-center {
+        text-align: center;
+    }
+    .red-text {
+        color: #e30606;
+    }
+  </style>
+</head>
+<body>
+  <h3>
+    CapShell - Turn any website into a native app. No rewrite. Zero Rust. Just config.
+  </h3>
+  <h3 class="text-center">
+    请在 <span class="red-text">config.json</span> 中配置应用URL。
+    <a href="#" target="_blank" rel="noopener">点击查看示例</a>
+  </h3>
+  <hr>
+
+  <h3>
+    开发者模式
+  </h3>
+  <button onclick="startGpsTracking()">启用GPS定位，请查看控制台</button>
+  <button onclick="stopGpsTracking()">关闭GPS定位</button>
+
+  <button onclick="openCamera()">打开相机</button>
+  <button onclick="closeCamera()">关闭相机</button>
+
+  <div>
+    <img id="img" style="width: 500px"/>
+  </div>
+
+  <ul id="gps-list">
+  </ul>
+
+  <script src="assets/js/sdk.js"></script>
+  <script>
+    const imgEl = document.getElementById("img");
+    const gpsEl = document.getElementById("gps-list");
+
+    // 开启GPS实时定位
+    function startGpsTracking() {
+      Shell.startGpsTracking(position => {
+        const gps_data = JSON.stringify(position);
+        console.log("子页面：实时GPS", position, '\n', gps_data);
+        appendEl(gps_data);
+      }, err => {
+        console.log("子页面：GPS错误：", err);
+      })
+      appendEl('GPS 实时定位已开启');
+    }
+
+    // 关闭GPS实时定位
+    function stopGpsTracking() {
+      Shell.stopGpsTracking();
+      appendEl('GPS 实时定位 已关闭');
+    }
+
+    // 打开相机
+    function openCamera() {
+      Shell.openCamera((result) => {
+        console.log("子页面", result.type, " Callback: ", result);
+        if (result.type === 'CAMERA_RESULT') {
+          result.image && (imgEl.src = result.image);
+        }
+      })
+    }
+
+    // 关闭相机
+    function closeCamera() {
+      Shell.closeCamera((result) => {
+        console.log("子页面 closeCamera Callback: ", result);
+      })
+    }
+
+    // 工具函数
+    function appendEl(content) {
+      const el = document.createElement('li');
+      el.innerHTML = content;
+      gpsEl.appendChild(el);
+    }
+  </script>
+</body>
+</html>
