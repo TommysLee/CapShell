@@ -88,7 +88,8 @@ jobs:
             libayatana-appindicator3-dev \
             librsvg2-dev \
             libssl-dev \
-            patchelf
+            patchelf \
+            xdg-utils
 
       # ---------- 构建 Tauri 应用（使用 pnpm 脚本） ----------
       - name: Build Tauri App (Portable)
@@ -121,9 +122,9 @@ jobs:
           cp src/assets/js/sdk.js artifacts/sdk.js
         shell: bash
 
-      # ---------- SLSA 签名（使用 Sigstore） ----------
+      # ---------- SLSA 签名（使用官方新 Action） ----------
       - name: Sign artifacts with SLSA
-        uses: actions/attest-build-provenance@v1
+        uses: actions/attest@v4
         with:
           subject-path: 'artifacts/${{ matrix.artifact_file }}'
 
