@@ -1,66 +1,139 @@
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
+name: Build CapShell (Portable)
 
-# This workflow lets you generate SLSA provenance file for your project.
-# The generation satisfies level 3 for the provenance requirements - see https://slsa.dev/spec/v0.1/requirements
-# The project is an initiative of the OpenSSF (openssf.org) and is developed at
-# https://github.com/slsa-framework/slsa-github-generator.
-# The provenance file can be verified using https://github.com/slsa-framework/slsa-verifier.
-# For more information about SLSA and how it improves the supply-chain, visit slsa.dev.
-
-name: SLSA generic generator
 on:
   workflow_dispatch:
   release:
-    types: [created]
+    types: [ published ]
+
+env:
+  CARGO_TERM_COLOR: always
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    outputs:
-      digests: ${{ steps.hash.outputs.digests }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact_name: capshell-windows
+            exe_ext: .exe
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            artifact_name: capshell-macos
+            exe_ext: .app
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact_name: capshell-linux
+            exe_ext: .AppImage
+
+    runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      # ========================================================
-      #
-      # Step 1: Build your artifacts.
-      #
-      # ========================================================
-      - name: Build artifacts
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      # ---------- 缓存 Cargo（加速编译） ----------
+      - name: Cache Cargo registry & target
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src-tauri/target
+          key: ${{ runner.os }}-${{ matrix.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.target }}-cargo-
+            ${{ runner.os }}-cargo-
+
+      # ---------- 安装 Node.js & pnpm（版本 11） ----------
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 11
+
+      # 缓存 pnpm store（可选，进一步加速）
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      # ---------- Linux 依赖 ----------
+      - name: Install Linux dependencies
+        if: matrix.os == 'ubuntu-latest'
         run: |
-          # These are some amazing artifacts.
-          echo "artifact1" > artifact1
-          echo "artifact2" > artifact2
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libssl-dev
 
-      # ========================================================
-      #
-      # Step 2: Add a step to generate the provenance subjects
-      #         as shown below. Update the sha256 sum arguments
-      #         to include all binaries that you generate
-      #         provenance for.
-      #
-      # ========================================================
-      - name: Generate subject for provenance
-        id: hash
+      # ---------- 构建 Tauri 应用（使用 pnpm 脚本） ----------
+      - name: Build Tauri App (Portable)
+        uses: tauri-apps/tauri-action@v0
+        id: tauri_build
+        with:
+          projectPath: ./
+          tauriScript: pnpm run tauri   # 使用 package.json 中定义的脚本
+          args: --target ${{ matrix.target }}
+          buildCommand: ""              # 跳过前端构建（Vanilla JS）
+
+      # ---------- 整理产物 ----------
+      - name: Prepare portable artifacts
         run: |
-          set -euo pipefail
+          mkdir -p artifacts
+          SRC_DIR="src-tauri/target/${{ matrix.target }}/release"
+          
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            cp $SRC_DIR/*.exe artifacts/capshell.exe
+          elif [ "${{ matrix.os }}" = "macos-latest" ]; then
+            cp -r $SRC_DIR/bundle/macos/*.app artifacts/capshell.app
+          elif [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+            cp $SRC_DIR/bundle/appimage/*.AppImage artifacts/capshell.AppImage
+          fi
+          
+          # 复制配置文件示例和 JS-SDK
+          cp src-tauri/default_config.json artifacts/config.json.example
+          cp src/assets/js/sdk.js artifacts/sdk.js
+        shell: bash
 
-          # List the artifacts the provenance will refer to.
-          files=$(ls artifact*)
-          # Generate the subjects (base64 encoded).
-          echo "hashes=$(sha256sum $files | base64 -w0)" >> "${GITHUB_OUTPUT}"
+      # ---------- SLSA 签名（使用 Sigstore） ----------
+      - name: Sign artifacts with SLSA
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-path: 'artifacts/capshell${{ matrix.exe_ext }}'
 
-  provenance:
-    needs: [build]
-    permissions:
-      actions: read   # To read the workflow path.
-      id-token: write # To sign the provenance.
-      contents: write # To add assets to a release.
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.4.0
-    with:
-      base64-subjects: "${{ needs.build.outputs.digests }}"
-      upload-assets: true # Optional: Upload to a new release
+      # ---------- 上传 Artifacts（用于调试） ----------
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: artifacts/
+          if-no-files-found: error
+
+      # ---------- 发布到 Release ----------
+      - name: Upload to Release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v3
+        with:
+          files: |
+            artifacts/capshell.exe
+            artifacts/capshell.app
+            artifacts/capshell.AppImage
+            artifacts/config.json.example
+            artifacts/sdk.js
