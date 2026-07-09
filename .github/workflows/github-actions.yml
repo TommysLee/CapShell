@@ -44,7 +44,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -59,18 +59,18 @@ jobs:
 
       # ---------- 安装 Node.js & pnpm（版本 11） ----------
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '24'
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v3
+        uses: pnpm/action-setup@v6
         with:
           version: 11
 
       # ---------- 手动缓存 pnpm store ----------
       - name: Cache pnpm store
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.pnpm-store
           key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
@@ -93,12 +93,11 @@ jobs:
 
       # ---------- 构建 Tauri 应用（使用 pnpm 脚本） ----------
       - name: Build Tauri App (Portable)
-        uses: tauri-apps/tauri-action@v0
+        uses: tauri-apps/tauri-action@v1
         id: tauri_build
         with:
           projectPath: ./
           tauriScript: pnpm run tauri   # 使用 package.json 中定义的脚本
-          args: --target ${{ matrix.target }}
           buildCommand: ""              # 跳过前端构建（Vanilla JS）
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -134,7 +133,7 @@ jobs:
 
       # ---------- 上传 Artifacts（用于调试） ----------
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.artifact_name }}
           path: artifacts/
