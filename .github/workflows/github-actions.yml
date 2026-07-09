@@ -26,11 +26,11 @@ jobs:
           - os: macos-latest
             target: aarch64-apple-darwin
             artifact_name: capshell-macos-arm
-            artifact_file: capshell-macos_arm64.app
+            artifact_file: capshell-macos_arm64.app.tar.gz
           - os: macos-latest
             target: x86_64-apple-darwin
             artifact_name: capshell-macos-intel
-            artifact_file: capshell-macos-intel_x64.app
+            artifact_file: capshell-macos-intel_x64.app.tar.gz
           - os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             artifact_name: capshell-linux-x64
@@ -114,7 +114,7 @@ jobs:
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
             cp $SRC_DIR/*.exe "artifacts/${{ matrix.artifact_file }}"
           elif [ "${{ matrix.os }}" = "macos-latest" ]; then
-            cp -r $SRC_DIR/bundle/macos/*.app "artifacts/${{ matrix.artifact_file }}"
+            cp -r $SRC_DIR/bundle/macos/*.app.tar.gz "artifacts/${{ matrix.artifact_file }}"
           elif [[ "${{ matrix.os }}" == ubuntu-* ]]; then
             cp $SRC_DIR/bundle/appimage/*.AppImage "artifacts/${{ matrix.artifact_file }}"
           fi
