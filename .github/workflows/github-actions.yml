@@ -77,6 +77,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pnpm-
 
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile  # 使用 --frozen-lockfile 确保锁文件一致
+
       # ---------- Linux 依赖 ----------
       - name: Install Linux dependencies
         if: startsWith(matrix.os, 'ubuntu')
