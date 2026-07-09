@@ -117,9 +117,13 @@ jobs:
             cp $SRC_DIR/bundle/appimage/*.AppImage "artifacts/${{ matrix.artifact_file }}"
           fi
           
-          # 复制配置文件示例和 JS-SDK
-          cp src-tauri/default_config.json artifacts/config.json.example
-          cp src/assets/js/sdk.js artifacts/sdk.js
+          # 复制配置文件示例和 JS-SDK（增加错误检查）
+          cp src-tauri/default_config.json artifacts/config.json.example || { echo "❌ 缺少 default_config.json"; exit 1; }
+          cp src/assets/js/sdk.js artifacts/sdk.js || { echo "❌ 缺少 sdk.js"; exit 1; }
+          
+          # 验证 artifacts 内容
+          echo "=== artifacts/ contents ==="
+          ls -la artifacts/
         shell: bash
 
       # ---------- SLSA 签名（使用官方新 Action） ----------
