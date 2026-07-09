@@ -98,7 +98,7 @@ jobs:
         with:
           projectPath: ./
           tauriScript: pnpm run tauri   # 使用 package.json 中定义的脚本
-          buildCommand: ""              # 跳过前端构建（Vanilla JS）
+          args: --target ${{ matrix.target }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
