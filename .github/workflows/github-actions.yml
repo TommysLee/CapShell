@@ -51,22 +51,33 @@ jobs:
         with:
           targets: ${{ matrix.target }}
 
+      # ---------- 缓存 Cargo（加速编译） ----------
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
           workspaces: './src-tauri -> target'
 
+      # ---------- 安装 Node.js & pnpm（版本 11） ----------
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '24'
-          cache: 'pnpm'
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
         with:
           version: 11
 
+      # ---------- 手动缓存 pnpm store ----------
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      # ---------- Linux 依赖 ----------
       - name: Install Linux dependencies
         if: startsWith(matrix.os, 'ubuntu')
         run: |
@@ -79,17 +90,19 @@ jobs:
             libssl-dev \
             patchelf
 
+      # ---------- 构建 Tauri 应用（使用 pnpm 脚本） ----------
       - name: Build Tauri App (Portable)
         uses: tauri-apps/tauri-action@v0
         id: tauri_build
         with:
           projectPath: ./
-          tauriScript: pnpm run tauri
+          tauriScript: pnpm run tauri   # 使用 package.json 中定义的脚本
           args: --target ${{ matrix.target }}
-          buildCommand: ""
+          buildCommand: ""              # 跳过前端构建（Vanilla JS）
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # ---------- 整理产物 ----------
       - name: Prepare portable artifacts
         run: |
           mkdir -p artifacts
@@ -103,15 +116,18 @@ jobs:
             cp $SRC_DIR/bundle/appimage/*.AppImage "artifacts/${{ matrix.artifact_file }}"
           fi
           
+          # 复制配置文件示例和 JS-SDK
           cp src-tauri/default_config.json artifacts/config.json.example
           cp src/assets/js/sdk.js artifacts/sdk.js
         shell: bash
 
+      # ---------- SLSA 签名（使用 Sigstore） ----------
       - name: Sign artifacts with SLSA
         uses: actions/attest-build-provenance@v1
         with:
           subject-path: 'artifacts/${{ matrix.artifact_file }}'
 
+      # ---------- 上传 Artifacts（用于调试） ----------
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -119,6 +135,7 @@ jobs:
           path: artifacts/
           if-no-files-found: error
 
+      # ---------- 发布到 Release ----------
       - name: Upload to Release
         if: github.event_name == 'release'
         uses: softprops/action-gh-release@v3
